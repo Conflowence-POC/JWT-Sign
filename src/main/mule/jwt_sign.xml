@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:jwt="http://www.mulesoft.org/schema/mule/jwt"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/jwt http://www.mulesoft.org/schema/mule/jwt/current/mule-jwt.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="29e972ef-295f-4bf5-ad8e-e281344d446d" basePath="/api" >
+		<http:listener-connection host="localhost" port="8081" />
+	</http:listener-config>
+	<jwt:config name="JWT_Configuration" algorithm="RS256" doc:name="JWT Configuration" doc:id="17c8c2e8-32ff-4cb6-8d46-a78f48450b7b" keyPath="${app.home}/privatekey.pem" />
+	<flow name="jwt_signFlow" doc:id="05f29ccb-4f9a-4ec3-a432-6715ad05edd5" >
+		<http:listener doc:name="Listener" doc:id="ef770021-8784-477b-96f6-bc93772e10c8" config-ref="HTTP_Listener_config" path="/jwtsign"/>
+		<ee:transform doc:name="Transform Message" doc:id="98761d33-8816-4f76-830f-3dc669ec1676" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+import toBinary from dw::util::Coercions
+import toBase64 from dw::core::Binaries
+var randomBytes = "unique identifier for the jwt."
+var jti = toBase64((randomBytes as Binary {encoding: "UTF-8"}))
+var expiration = now() + |PT24H|
+var notBefore = now() - |PT1M|
+var epochExpiration = expiration as Number { unit: "seconds" }
+var enotBefore = notBefore as Number { unit: "seconds"}
+
+---
+{
+	"aud": "https://login.microsoftonline.com/fa68f7c0-d3f5-499d-84b2-dfbf01878860/oauth2/v2.0/token",
+	"iss": "379901a5-1c7c-45cd-a0a3-ad08a9bbe399",
+	"sub": "379901a5-1c7c-45cd-a0a3-ad08a9bbe399",
+	"jti": uuid(),
+ 	"exp": epochExpiration,
+ 	"nbf": enotBefore
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<jwt:sign doc:name="Sign" doc:id="3aa02bd9-96d6-4a13-a5ae-117628c62e61" config-ref="JWT_Configuration">
+			<jwt:header ><![CDATA[#[{
+	"alg": "RS256",
+	"typ": "JWT",
+	"x5t":"rY3TmXaP4R2gYQ6AHYGCcboYJog="
+}]]]></jwt:header>
+		</jwt:sign>
+		<logger level="INFO" doc:name="Logger" doc:id="84d3f240-05cc-437c-b6fa-89dd2b5d2c07" message="#[payload]"/>
+	</flow>
+</mule>

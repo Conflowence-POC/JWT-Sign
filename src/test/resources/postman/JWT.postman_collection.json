@@ -1,0 +1,19 @@
+{
+	"info": {
+		"_postman_id": "ae8a86ce-2caa-470d-8b08-8d6d3e82a0c6",
+		"name": "JWT",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "31158538"
+	},
+	"item": [
+		{
+			"name": "http://localhost:8081/api/jwtsign",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://localhost:8081/api/jwtsign"
+			},
+			"response": []
+		}
+	]
+}
